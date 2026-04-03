@@ -78,7 +78,14 @@ input[type=file]{display:none}
 #empty-msg{display:none;padding:60px 20px;text-align:center;color:var(--dim);font-size:14px;line-height:2.5}
 #empty-msg.on{display:block}
 
-/* 横向き */
+/* 手書きモード */
+#draw-btn.on{background:var(--gold);color:#000;font-weight:700}
+body.draw-mode #scroll-wrap{cursor:crosshair}
+#draw-toolbar{display:none;position:fixed;top:50%;right:10px;transform:translateY(-50%);z-index:50;flex-direction:column;gap:6px;pointer-events:all}
+#draw-toolbar.on{display:flex}
+.color-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;touch-action:manipulation}
+.color-btn.active{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,0.5)}
+#draw-clear-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;touch-action:manipulation;font-family:'Fira Code',monospace}
 @media(orientation:landscape){
   #topbar{flex-wrap:nowrap;padding:3px 10px;gap:5px}
   #song-title{font-size:13px}
@@ -112,6 +119,7 @@ input[type=file]{display:none}
   <div id="scroll-content">
     <div id="empty-msg" class="on">&#9776; をタップして<br>楽譜を追加してください</div>
   </div>
+  <canvas id="draw-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5"></canvas>
 </div>
 
 <div id="overlay">
@@ -124,6 +132,18 @@ input[type=file]{display:none}
   </div>
   <button class="btn btn-accent" id="play-btn" onclick="toggleScroll()">&#9654; START</button>
   <button class="btn" onclick="nextSong()">&#9197;</button>
+  <button class="btn" onclick="jumpToTop()" title="先頭へ">&#11014;</button>
+  <button class="btn" id="draw-btn" onclick="toggleDrawMode()" title="手書きマーカー">&#9998;</button>
+</div>
+
+<!-- 手書きツールバー -->
+<div id="draw-toolbar">
+  <button class="color-btn active" style="background:#f4c842" onclick="setDrawColor('#f4c842',this)"></button>
+  <button class="color-btn" style="background:#e84545" onclick="setDrawColor('#e84545',this)"></button>
+  <button class="color-btn" style="background:#5bc8af" onclick="setDrawColor('#5bc8af',this)"></button>
+  <button class="color-btn" style="background:#fff" onclick="setDrawColor('#fff',this)"></button>
+  <button class="color-btn" style="background:#888" onclick="setDrawColor(null,this)" title="消しゴム">&#10006;</button>
+  <button id="draw-clear-btn" onclick="clearDrawing()">\u5168\u6d88\u53bb</button>
 </div>
 
 <!-- SETLIST -->
@@ -291,12 +311,19 @@ function toggleFit(){
 }
 
 // ==== SCROLL ====
-function resetScroll(){scrollY=0;scrollPausedAt=0;songStartTime=Date.now();applyScroll();stopScroll();}
+function resetScroll(){
+  scrollY=0;scrollPausedAt=0;songStartTime=Date.now();
+  drawHistory=[];currentLines=[];
+  var canvas=document.getElementById('draw-canvas');
+  if(canvas){var ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);}
+  applyScroll();stopScroll();
+}
 function applyScroll(){
   var c=document.getElementById('scroll-content'),w=document.getElementById('scroll-wrap');
   var max=Math.max(0,c.scrollHeight-w.clientHeight);
   scrollY=Math.max(0,Math.min(scrollY,max));
   c.style.transform='translateY('+(-scrollY)+'px)';
+  if(drawHistory.length>0) redrawCanvas();
 }
 function stopScroll(){
   scrollPausedAt=(Date.now()-songStartTime)/1000;
@@ -461,7 +488,116 @@ function addSong(){
   });
 }
 
-// ==== INIT ====
+// ==== JUMP TO TOP ====
+function jumpToTop(){
+  scrollY=0;scrollPausedAt=0;songStartTime=Date.now();
+  applyScroll();
+  if(scrollSpeed>0) stopScroll();
+}
+
+// ==== DRAW MODE ====
+var drawMode=false, drawColor='#f4c842', drawSize=4, isEraser=false;
+var drawHistory=[]; // {scrollY, lines:[]}
+var currentLines=[];
+var drawActive=false, lastDX=0, lastDY=0;
+
+function toggleDrawMode(){
+  drawMode=!drawMode;
+  var btn=document.getElementById('draw-btn');
+  var toolbar=document.getElementById('draw-toolbar');
+  btn.classList.toggle('on',drawMode);
+  toolbar.classList.toggle('on',drawMode);
+  document.body.classList.toggle('draw-mode',drawMode);
+  var canvas=document.getElementById('draw-canvas');
+  canvas.style.pointerEvents=drawMode?'all':'none';
+  if(drawMode) resizeCanvas();
+}
+
+function setDrawColor(color, btn){
+  isEraser=!color;
+  drawColor=color||'#000';
+  document.querySelectorAll('.color-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+}
+
+function resizeCanvas(){
+  var canvas=document.getElementById('draw-canvas');
+  var wrap=document.getElementById('scroll-wrap');
+  canvas.width=wrap.clientWidth;
+  canvas.height=wrap.clientHeight;
+  redrawCanvas();
+}
+
+function redrawCanvas(){
+  var canvas=document.getElementById('draw-canvas');
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // scrollYに応じてオフセットして描画
+  drawHistory.forEach(function(entry){
+    entry.lines.forEach(function(line){
+      if(line.points.length<2) return;
+      ctx.save();
+      ctx.translate(0, -(scrollY - entry.scrollY));
+      ctx.beginPath();
+      ctx.strokeStyle=line.color;
+      ctx.lineWidth=line.size;
+      ctx.lineCap='round';
+      ctx.lineJoin='round';
+      if(line.eraser) ctx.globalCompositeOperation='destination-out';
+      ctx.moveTo(line.points[0].x, line.points[0].y);
+      for(var i=1;i<line.points.length;i++) ctx.lineTo(line.points[i].x, line.points[i].y);
+      ctx.stroke();
+      ctx.restore();
+    });
+  });
+}
+
+function clearDrawing(){
+  if(!confirm('\u624b\u66f8\u304d\u3092\u5168\u3066\u6d88\u3057\u307e\u3059\u304b\uff1f'))return;
+  drawHistory=[];currentLines=[];
+  var canvas=document.getElementById('draw-canvas');
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+// キャンバスのタッチイベント
+document.addEventListener('DOMContentLoaded',function(){
+  var canvas=document.getElementById('draw-canvas');
+
+  canvas.addEventListener('touchstart',function(e){
+    if(!drawMode)return;
+    e.preventDefault();
+    var t=e.touches[0];
+    var r=canvas.getBoundingClientRect();
+    drawActive=true;
+    var line={color:drawColor,size:isEraser?20:drawSize,eraser:isEraser,points:[{x:t.clientX-r.left,y:t.clientY-r.top}]};
+    currentLines.push(line);
+    // 今のscrollYでエントリーを作成または追加
+    var entry=drawHistory.length>0?drawHistory[drawHistory.length-1]:null;
+    if(!entry||entry.scrollY!==scrollY){
+      entry={scrollY:scrollY,lines:[]};
+      drawHistory.push(entry);
+    }
+    entry.lines.push(line);
+  },{passive:false});
+
+  canvas.addEventListener('touchmove',function(e){
+    if(!drawMode||!drawActive)return;
+    e.preventDefault();
+    var t=e.touches[0];
+    var r=canvas.getBoundingClientRect();
+    var line=currentLines[currentLines.length-1];
+    if(!line)return;
+    line.points.push({x:t.clientX-r.left,y:t.clientY-r.top});
+    redrawCanvas();
+  },{passive:false});
+
+  canvas.addEventListener('touchend',function(e){
+    drawActive=false;
+  },{passive:true});
+
+  window.addEventListener('resize',function(){if(drawMode)resizeCanvas();});
+});
 window.onerror=function(msg,src,line){
   var d=document.createElement('div');
   d.style.cssText='position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;font-size:12px;padding:8px;z-index:9999';
