@@ -135,9 +135,6 @@ input[type=file]{display:none}
   <div id="setlist-list"></div>
   <div id="setlist-footer">
     <button class="btn btn-accent" style="flex:1" onclick="openAddPanel()">&#43; 楽譜を追加</button>
-    <button class="btn" style="flex:1" onclick="exportData()">&#128229; 書き出し</button>
-    <button class="btn" style="flex:1" onclick="document.getElementById('import-input').click()">&#128228; 読み込み</button>
-    <input type="file" id="import-input" accept=".json" onchange="importData(this)">
   </div>
 </div>
 
@@ -349,8 +346,6 @@ document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
   applyScroll();
 },{passive:true});
 document.getElementById('scroll-wrap').addEventListener('touchend',function(e){
-  var dy=Math.abs(scrollY-tscy);
-  if(dy<8&&scrollSpeed===0&&currentSpeedTarget>0){toggleScroll();return;}
   tscy=scrollY;
 },{passive:true});
 
@@ -453,33 +448,6 @@ function addSong(){
     currentIndex=setlist.length-1;
     closeAddPanel();closeSetlist();clearFiles();render();
   });
-}
-
-// ==== EXPORT / IMPORT ====
-function exportData(){
-  var data={version:1,exportedAt:new Date().toISOString(),songs:setlist};
-  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;
-  var d=new Date();a.download='score-scroll-'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.json';
-  document.body.appendChild(a);a.click();
-  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
-}
-function importData(input){
-  var file=input.files[0];if(!file)return;input.value='';
-  var reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      var data=JSON.parse(e.target.result);
-      if(!data.songs||!Array.isArray(data.songs)){alert('\u30d5\u30a1\u30a4\u30eb\u306e\u5f62\u5f0f\u304c\u6b63\u3057\u304f\u3042\u308a\u307e\u305b\u3093');return;}
-      var mode=confirm(data.songs.length+'\u66f2\u304c\u898b\u3064\u304b\u308a\u307e\u3057\u305f\u3002\n\n\u3010OK\u3011\u8ffd\u52a0\n\u3010\u30ad\u30e3\u30f3\u30bb\u30eb\u3011\u5168\u3066\u7f6e\u304d\u63db\u3048');
-      if(mode){data.songs.forEach(function(s){setlist.push(s);});}
-      else{setlist=data.songs;currentIndex=0;}
-      saveState();render();closeSetlist();
-      alert('\u8aad\u307f\u8fbc\u307f\u5b8c\u4e86\uff01');
-    }catch(e){alert('\u30a8\u30e9\u30fc: '+e.message);}
-  };
-  reader.readAsText(file);
 }
 
 // ==== INIT ====
