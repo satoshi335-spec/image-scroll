@@ -365,6 +365,7 @@ function renderSetlist(){
     info.appendChild(t);info.appendChild(m);
     var actions=document.createElement('div');actions.className='item-actions';
     function mkBtn(label,cls,cb){var b=document.createElement('button');b.className='icon-btn'+(cls?' '+cls:'');b.textContent=label;b.addEventListener('click',function(e){e.stopPropagation();cb();});return b;}
+    actions.appendChild(mkBtn('\u270f\ufe0f','',function(){renameSong(i);}));
     actions.appendChild(mkBtn('\u2191','',function(){moveSong(i,-1);}));
     actions.appendChild(mkBtn('\u2193','',function(){moveSong(i,+1);}));
     actions.appendChild(mkBtn('\ud83d\uddd1','del',function(){deleteSong(i);}));
@@ -372,6 +373,16 @@ function renderSetlist(){
     item.addEventListener('click',function(){goToSong(i);closeSetlist();});
     list.appendChild(item);
   });
+}
+function renameSong(i){
+  var current=setlist[i].title||'\u697d\u8b5c';
+  var newTitle=prompt('\u66f2\u540d\u3092\u5909\u66f4\u3057\u3066\u304f\u3060\u3055\u3044',current);
+  if(newTitle===null)return;
+  if(!newTitle.trim())return;
+  setlist[i].title=newTitle.trim();
+  saveState();
+  renderSetlist();
+  if(i===currentIndex) document.getElementById('song-title').textContent=newTitle.trim();
 }
 function moveSong(i,dir){
   var j=i+dir;if(j<0||j>=setlist.length)return;
