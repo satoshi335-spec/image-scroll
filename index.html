@@ -356,8 +356,10 @@ function changeSpeed(d){
 }
 function goToSong(i){
   if(i<0||i>=setlist.length)return;
-  // 現在の描画を保存
+  // 現在の描画と速度を保存
   drawHistoryMap[currentIndex]=drawHistory.slice();
+  if(setlist[currentIndex]) setlist[currentIndex].speedTarget=currentSpeedTarget;
+  saveState();
   currentIndex=i;
   // 次の曲の描画を復元
   drawHistory=drawHistoryMap[currentIndex]?drawHistoryMap[currentIndex].slice():[];
