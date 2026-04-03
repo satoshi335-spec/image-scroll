@@ -81,11 +81,10 @@ input[type=file]{display:none}
 /* 手書きモード */
 #draw-btn.on{background:var(--gold);color:#000;font-weight:700}
 body.draw-mode #scroll-wrap{cursor:crosshair}
-#draw-toolbar{display:none;position:fixed;top:50%;right:10px;transform:translateY(-50%);z-index:50;flex-direction:column;gap:6px;pointer-events:all}
+#draw-toolbar{display:none;position:fixed;bottom:80px;right:10px;z-index:300;flex-direction:column;gap:8px;pointer-events:all;align-items:center}
 #draw-toolbar.on{display:flex}
-.color-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;touch-action:manipulation}
-.color-btn.active{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,0.5)}
-#draw-clear-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;touch-action:manipulation;font-family:'Fira Code',monospace}
+.color-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;touch-action:manipulation;flex-shrink:0}
+.color-btn.active{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,0.6)}
 @media(orientation:landscape){
   #topbar{flex-wrap:nowrap;padding:3px 10px;gap:5px}
   #song-title{font-size:13px}
@@ -142,8 +141,8 @@ body.draw-mode #scroll-wrap{cursor:crosshair}
   <button class="color-btn" style="background:#e84545" onclick="setDrawColor('#e84545',this)"></button>
   <button class="color-btn" style="background:#5bc8af" onclick="setDrawColor('#5bc8af',this)"></button>
   <button class="color-btn" style="background:#fff" onclick="setDrawColor('#fff',this)"></button>
-  <button class="color-btn" style="background:#888" onclick="setDrawColor(null,this)" title="消しゴム">&#10006;</button>
-  <button id="draw-clear-btn" onclick="clearDrawing()">\u5168\u6d88\u53bb</button>
+  <button id="eraser-btn" onclick="setEraser(this)" style="width:36px;height:36px;border-radius:50%;background:#444;border:3px solid transparent;cursor:pointer;touch-action:manipulation;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">&#10006;</button>
+  <button id="draw-clear-btn" onclick="clearDrawing()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;touch-action:manipulation;font-family:'Fira Code',monospace">&#x5168;&#x6D88;&#x53BB;</button>
 </div>
 
 <!-- SETLIST -->
@@ -514,10 +513,16 @@ function toggleDrawMode(){
 }
 
 function setDrawColor(color, btn){
-  isEraser=!color;
-  drawColor=color||'#000';
+  isEraser=false;
+  drawColor=color;
   document.querySelectorAll('.color-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('eraser-btn').style.borderColor='transparent';
   btn.classList.add('active');
+}
+function setEraser(btn){
+  isEraser=true;
+  document.querySelectorAll('.color-btn').forEach(function(b){b.classList.remove('active');});
+  btn.style.borderColor='#fff';
 }
 
 function resizeCanvas(){
