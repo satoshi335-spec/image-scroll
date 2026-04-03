@@ -233,7 +233,17 @@ function deleteImages(key){
 // ==== PERSIST ====
 function saveState(){
   try{
-    var s=setlist.map(function(s){return {title:s.title,imageKey:s.imageKey,speedTarget:s.speedTarget,memo:s.memo||''};});
+    var s=setlist.map(function(song){
+      return {
+        title:song.title,
+        imageKey:song.imageKey,
+        speedTarget:song.speedTarget||40,
+        memo:song.memo||'',
+        imgScale:song.imgScale||1.0,
+        imgFit:(song.imgFit!==undefined)?song.imgFit:true,
+        imgInverted:song.imgInverted||false
+      };
+    });
     localStorage.setItem('ss_list',JSON.stringify(s));
     localStorage.setItem('ss_idx',currentIndex);
   }catch(e){}
