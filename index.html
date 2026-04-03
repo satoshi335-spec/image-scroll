@@ -259,6 +259,10 @@ function render(){
   var song=setlist[currentIndex];
   document.getElementById('song-title').textContent=song.title||'\u697d\u8b5c';
   currentSpeedTarget=song.speedTarget||40;
+  // ズーム・反転設定を復元
+  imgScale=song.imgScale||1.0;
+  imgFit=(song.imgFit!==undefined)?song.imgFit:true;
+  imgInverted=song.imgInverted||false;
   document.getElementById('speed-display').textContent='\u2014';
   document.getElementById('scroll-content').innerHTML='<div style="padding:30px;text-align:center;color:var(--dim);font-size:13px">\u8aad\u307f\u8fbc\u307f\u4e2d...</div>';
   loadImages(song.imageKey,function(imgs){
@@ -301,12 +305,22 @@ function doZoom(delta){
   imgFit=false;
   imgScale=Math.max(0.3,Math.min(3.0,Math.round((imgScale+delta)*10)/10));
   applyImgSettings();
+  saveImgSettings();
 }
-function toggleInvert(){imgInverted=!imgInverted;applyImgSettings();}
+function toggleInvert(){imgInverted=!imgInverted;applyImgSettings();saveImgSettings();}
 function toggleFit(){
   imgFit=!imgFit;
   if(imgFit) imgScale=1.0;
   applyImgSettings();
+  saveImgSettings();
+}
+function saveImgSettings(){
+  if(setlist[currentIndex]){
+    setlist[currentIndex].imgScale=imgScale;
+    setlist[currentIndex].imgFit=imgFit;
+    setlist[currentIndex].imgInverted=imgInverted;
+    saveState();
+  }
 }
 
 // ==== SCROLL ====
@@ -356,9 +370,14 @@ function changeSpeed(d){
 }
 function goToSong(i){
   if(i<0||i>=setlist.length)return;
-  // 現在の描画と速度を保存
+  // 現在の描画・速度・ズーム設定を保存
   drawHistoryMap[currentIndex]=drawHistory.slice();
-  if(setlist[currentIndex]) setlist[currentIndex].speedTarget=currentSpeedTarget;
+  if(setlist[currentIndex]){
+    setlist[currentIndex].speedTarget=currentSpeedTarget;
+    setlist[currentIndex].imgScale=imgScale;
+    setlist[currentIndex].imgFit=imgFit;
+    setlist[currentIndex].imgInverted=imgInverted;
+  }
   saveState();
   currentIndex=i;
   // 次の曲の描画を復元
