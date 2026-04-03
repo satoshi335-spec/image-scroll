@@ -38,7 +38,7 @@ body{background:var(--bg);color:var(--lyric);font-family:'Fira Code',monospace;d
 #scroll-content img{display:block;margin-bottom:2px;width:100%}
 
 /* OVERLAY */
-#overlay{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--ui) 45%);padding:18px 14px 14px;display:flex;justify-content:center;align-items:center;gap:10px;pointer-events:none;flex-wrap:wrap}
+#overlay{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--ui) 45%);padding:18px 14px 14px;display:flex;justify-content:center;align-items:center;gap:10px;pointer-events:none;flex-wrap:wrap;z-index:20}
 #overlay>*{pointer-events:all;touch-action:manipulation}
 .ctrl-group{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .ctrl-label{font-size:10px;color:var(--lyric);opacity:.7;letter-spacing:.05em;text-transform:uppercase}
@@ -81,7 +81,7 @@ input[type=file]{display:none}
 /* 手書きモード */
 #draw-btn.on{background:var(--gold);color:#000;font-weight:700}
 body.draw-mode #scroll-wrap{cursor:crosshair}
-#draw-toolbar{display:none;position:fixed;bottom:80px;right:10px;z-index:300;flex-direction:column;gap:8px;pointer-events:all;align-items:center}
+#draw-toolbar{display:none;position:fixed;bottom:130px;right:10px;z-index:400;flex-direction:column;gap:8px;pointer-events:all;align-items:center}
 #draw-toolbar.on{display:flex}
 .color-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;touch-action:manipulation;flex-shrink:0}
 .color-btn.active{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,0.6)}
@@ -118,7 +118,7 @@ body.draw-mode #scroll-wrap{cursor:crosshair}
   <div id="scroll-content">
     <div id="empty-msg" class="on">&#9776; をタップして<br>楽譜を追加してください</div>
   </div>
-  <canvas id="draw-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5"></canvas>
+  <canvas id="draw-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;touch-action:none"></canvas>
 </div>
 
 <div id="overlay">
@@ -504,11 +504,13 @@ function toggleDrawMode(){
   drawMode=!drawMode;
   var btn=document.getElementById('draw-btn');
   var toolbar=document.getElementById('draw-toolbar');
+  var canvas=document.getElementById('draw-canvas');
   btn.classList.toggle('on',drawMode);
   toolbar.classList.toggle('on',drawMode);
   document.body.classList.toggle('draw-mode',drawMode);
-  var canvas=document.getElementById('draw-canvas');
+  // ドローモード時: キャンバスはz-index:15（overlayの下、scroll-contentの上）
   canvas.style.pointerEvents=drawMode?'all':'none';
+  canvas.style.zIndex=drawMode?'15':'5';
   if(drawMode) resizeCanvas();
 }
 
