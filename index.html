@@ -44,11 +44,22 @@ body{background:var(--bg);color:var(--lyric);font-family:'Fira Code',monospace;d
 #scroll-content img{display:block;margin-bottom:2px;width:100%}
 
 /* OVERLAY */
-#overlay{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--ui) 45%);padding:18px 14px 14px;display:flex;justify-content:center;align-items:center;gap:10px;pointer-events:none;flex-wrap:wrap;z-index:20}
+#overlay{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--ui) 45%);padding:22px 20px 18px;display:flex;justify-content:center;align-items:center;gap:14px;pointer-events:none;flex-wrap:wrap;z-index:20}
 #overlay>*{pointer-events:all;touch-action:manipulation}
-.ctrl-group{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.ctrl-label{font-size:10px;color:var(--lyric);opacity:.7;letter-spacing:.05em;text-transform:uppercase}
-#speed-display{font-size:14px;font-weight:600;color:var(--gold);min-width:36px;text-align:center}
+.ctrl-group{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ctrl-label{font-size:11px;color:var(--lyric);opacity:.7;letter-spacing:.05em;text-transform:uppercase}
+#speed-display{font-size:16px;font-weight:600;color:var(--gold);min-width:40px;text-align:center}
+/* iPad対応 */
+@media(min-width:768px){
+  .btn{font-size:16px;padding:10px 18px;min-height:48px;border-radius:8px}
+  .btn-accent{min-width:120px;font-size:17px}
+  #overlay{padding:28px 30px 24px;gap:20px}
+  .ctrl-label{font-size:13px}
+  #speed-display{font-size:18px;min-width:48px}
+  #topbar{padding:8px 16px;gap:10px}
+  #song-title{font-size:18px}
+  #menu-btn{width:48px;height:48px;font-size:24px}
+}
 
 /* PANEL */
 .panel{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column}
@@ -411,13 +422,22 @@ function prevSong(){goToSong((currentIndex-1+setlist.length)%setlist.length);}
 var tsy=0,tscy=0;
 document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){
   tsy=e.touches[0].clientY;tscy=scrollY;
-  if(scrollSpeed>0) stopScroll();
 },{passive:true});
 document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
   scrollY=tscy+(tsy-e.touches[0].clientY);
   applyScroll();
 },{passive:true});
 document.getElementById('scroll-wrap').addEventListener('touchend',function(e){
+  var dy=Math.abs(scrollY-tscy);
+  if(dy<8){
+    // タップ：スクロール中なら停止、停止中なら再開
+    if(scrollSpeed>0){
+      stopScroll();
+    } else if(currentSpeedTarget>0){
+      toggleScroll();
+    }
+    return;
+  }
   tscy=scrollY;
 },{passive:true});
 
