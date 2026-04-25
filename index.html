@@ -420,8 +420,13 @@ function prevSong(){goToSong((currentIndex-1+setlist.length)%setlist.length);}
 
 // ==== TOUCH ====
 var tsy=0,tscy=0;
+var tsy=0,tscy=0,tsScrolling=false;
 document.getElementById('scroll-wrap').addEventListener('touchstart',function(e){
-  tsy=e.touches[0].clientY;tscy=scrollY;
+  tsy=e.touches[0].clientY;
+  tscy=scrollY;
+  tsScrolling=scrollSpeed>0;
+  // スクロール中はタッチ開始で停止
+  if(tsScrolling) stopScroll();
 },{passive:true});
 document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
   scrollY=tscy+(tsy-e.touches[0].clientY);
@@ -430,11 +435,11 @@ document.getElementById('scroll-wrap').addEventListener('touchmove',function(e){
 document.getElementById('scroll-wrap').addEventListener('touchend',function(e){
   var dy=Math.abs(scrollY-tscy);
   if(dy<8){
-    // タップ：スクロール中なら停止、停止中なら再開
-    if(scrollSpeed>0){
-      stopScroll();
-    } else if(currentSpeedTarget>0){
-      toggleScroll();
+    if(tsScrolling){
+      // スクロール中だったのを止めた → そのまま停止
+    } else {
+      // 停止中だったのをタップ → 再開
+      if(currentSpeedTarget>0) toggleScroll();
     }
     return;
   }
